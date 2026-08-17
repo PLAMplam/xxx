@@ -1,0 +1,1344 @@
+
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="ค้นหาและกรองรายชื่อและคะแนนจากฐานข้อมูลคงที่ พร้อมตัวกรองจังหวัดและอำเภอ">
+  <meta property="og:title" content="ระบบค้นหารายชื่อและคะแนน">
+  <meta property="og:description" content="ค้นหาและกรองรายชื่อและคะแนนจากข้อมูลล่าสุด">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data-viewer-8k4m2p.pages.dev/">
+  <meta property="og:image" content="https://data-viewer-8k4m2p.pages.dev/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>ระบบค้นหารายชื่อและคะแนน</title>
+  <style>
+    :root {
+      --navy: #102f46;
+      --navy-soft: #1c4b64;
+      --teal: #087f73;
+      --teal-dark: #05665d;
+      --mint: #d9f3ed;
+      --cream: #f5f3ec;
+      --paper: #ffffff;
+      --ink: #18313f;
+      --muted: #647984;
+      --line: #d8e1e4;
+      --line-strong: #bccbd1;
+      --danger: #9b2c2c;
+      --shadow: 0 16px 40px rgba(16, 47, 70, .11);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(8, 127, 115, .11), transparent 28rem),
+        linear-gradient(180deg, #fafbf8 0%, var(--cream) 100%);
+      font-family: "Noto Sans Thai", "Leelawadee UI", Tahoma, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    button, input, select { font: inherit; }
+    button, select { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 3px solid rgba(8, 127, 115, .28);
+      outline-offset: 2px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: -80px;
+      z-index: 100;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--navy);
+    }
+    .skip-link:focus { top: 12px; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 34px 24px 88px;
+      color: #fff;
+      background: linear-gradient(128deg, var(--navy) 0%, var(--navy-soft) 60%, var(--teal) 135%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -110px;
+      bottom: -225px;
+      width: 460px;
+      height: 460px;
+      border: 72px solid rgba(255, 255, 255, .06);
+      border-radius: 50%;
+    }
+    .hero-inner, main { width: min(1440px, 100%); margin-inline: auto; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: #afece3;
+      font-size: .82rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 3px;
+      border-radius: 999px;
+      background: #80e0d3;
+    }
+    h1 {
+      max-width: 900px;
+      margin: 0;
+      font-size: clamp(2rem, 4.5vw, 4rem);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+    .hero-copy {
+      max-width: 760px;
+      margin: 14px 0 0;
+      color: #d9e8ee;
+      font-size: clamp(1rem, 1.6vw, 1.15rem);
+    }
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 12px;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 999px;
+      color: #e7fbf8;
+      background: rgba(255, 255, 255, .09);
+      font-size: .86rem;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #7ce0bd;
+      box-shadow: 0 0 0 4px rgba(124, 224, 189, .14);
+    }
+    .sheet-link {
+      color: #dff9f5;
+      font-size: .86rem;
+      font-weight: 800;
+      text-underline-offset: 3px;
+    }
+
+    main {
+      position: relative;
+      z-index: 2;
+      margin-top: -54px;
+      padding: 0 24px 52px;
+    }
+    .card {
+      border: 1px solid rgba(188, 203, 209, .78);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .97);
+      box-shadow: var(--shadow);
+    }
+    .filter-card { padding: 22px; }
+    .section-heading, .results-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .section-heading { margin-bottom: 18px; }
+    .section-heading h2, .results-title h2 { margin: 0; font-size: 1.16rem; }
+    .section-heading p, .results-title p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    .filter-count {
+      min-width: max-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--mint);
+      font-size: .8rem;
+      font-weight: 900;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .primary-search { margin-bottom: 14px; }
+    .location-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid #bfe2dc;
+      border-radius: 12px;
+      background: #f1faf8;
+    }
+    .location-filter-grid .field { grid-column: auto; }
+    .advanced-filters > summary {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 46px;
+      padding: 11px 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 11px;
+      color: var(--navy);
+      background: #f6f9f9;
+      font-size: .9rem;
+      font-weight: 900;
+      cursor: pointer;
+      list-style: none;
+    }
+    .advanced-filters > summary::-webkit-details-marker { display: none; }
+    .advanced-filters > summary::after {
+      content: "+";
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--teal);
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+    .advanced-filters[open] > summary::after { content: "–"; }
+    .field { grid-column: span 3; }
+    .field-wide { grid-column: span 6; }
+    .field-score { grid-column: span 2; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #334e5c;
+      font-size: .82rem;
+      font-weight: 900;
+    }
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink);
+      background: #fff;
+    }
+    input:hover, select:hover { border-color: #91a9b3; }
+    input::placeholder { color: #8c9da5; }
+    .filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .button {
+      min-height: 42px;
+      padding: 9px 15px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-weight: 900;
+      transition: transform .12s ease, background .16s ease, border-color .16s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(0); }
+    .button-primary { color: #fff; background: var(--teal); }
+    .button-primary:hover { background: var(--teal-dark); }
+    .button-secondary { color: var(--navy); border-color: var(--line-strong); background: #fff; }
+    .button-secondary:hover { background: #f2f7f7; }
+    .filter-hint { margin-left: auto; color: var(--muted); font-size: .82rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .stat {
+      min-height: 112px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 7px 22px rgba(20, 52, 70, .06);
+    }
+    .stat-label { color: var(--muted); font-size: .82rem; font-weight: 800; }
+    .stat-value {
+      margin-top: 4px;
+      color: var(--navy);
+      font-size: clamp(1.65rem, 3vw, 2.25rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -.03em;
+    }
+    .stat-note { margin-top: 6px; color: var(--muted); font-size: .75rem; }
+
+    .results-card { overflow: hidden; }
+    .results-toolbar {
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .results-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .mobile-sort-controls { display: none; }
+    .page-size-label { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); }
+    .page-size-label select { width: auto; min-height: 39px; padding-block: 6px; }
+    .table-wrap { overflow: auto; max-height: min(68vh, 760px); scrollbar-color: #adc0c9 transparent; }
+    table { width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; font-size: .9rem; }
+    thead { position: sticky; top: 0; z-index: 3; }
+    th {
+      padding: 0;
+      color: #34505e;
+      background: #edf3f4;
+      border-bottom: 1px solid var(--line-strong);
+      text-align: left;
+      font-size: .78rem;
+      white-space: nowrap;
+    }
+    .sort-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-height: 48px;
+      padding: 11px 12px;
+      border: 0;
+      color: inherit;
+      background: transparent;
+      font-weight: 900;
+      text-align: left;
+    }
+    .sort-button:hover { color: var(--teal-dark); background: #e4eeee; }
+    .sort-mark { color: #81949e; font-size: .72rem; }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e7ecee;
+      vertical-align: top;
+      background: rgba(255, 255, 255, .98);
+    }
+    tbody tr:hover td { background: #f7fbfa; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .seq { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .person { min-width: 190px; color: var(--navy); font-weight: 900; }
+    .masked-id { color: #536a77; font-family: Consolas, monospace; font-size: .82rem; }
+    .org { min-width: 230px; }
+    .status-cell { min-width: 150px; }
+    .district-cell, .province-cell { min-width: 120px; color: var(--teal-dark); font-weight: 800; }
+    .score {
+      display: inline-flex;
+      min-width: 50px;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--teal);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .mobile-result-list { display: none; }
+    .result-card {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 5px 18px rgba(20, 52, 70, .06);
+      overflow: hidden;
+    }
+    .result-card-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 10px;
+      padding: 14px 14px 11px;
+      border-bottom: 1px solid #e9eeef;
+    }
+    .result-card-kicker {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+    }
+    .result-card-name {
+      margin: 0;
+      color: var(--navy);
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+    .result-card-id {
+      margin-top: 4px;
+      color: #607681;
+      font-family: Consolas, monospace;
+      font-size: .76rem;
+    }
+    .result-card-score {
+      min-width: 54px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      color: #fff;
+      background: var(--teal);
+      text-align: center;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+    .result-card-score small { display: block; margin-top: 3px; font-size: .6rem; font-weight: 700; opacity: .82; }
+    .result-card-details {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px 14px;
+    }
+    .result-detail { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .result-detail-label { color: var(--muted); font-size: .72rem; font-weight: 800; }
+    .result-detail-value { color: #294653; font-size: .86rem; font-weight: 700; overflow-wrap: anywhere; }
+    .loading-state, .empty-state, .error-state { padding: 58px 24px; text-align: center; }
+    .loading-state strong, .empty-state strong, .error-state strong { display: block; font-size: 1.08rem; }
+    .loading-state span, .empty-state span, .error-state span { color: var(--muted); }
+    .empty-state, .error-state { display: none; }
+    .error-state strong { color: var(--danger); }
+    .error-state .button { margin-top: 14px; }
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfc;
+    }
+    .page-summary { color: var(--muted); font-size: .84rem; }
+    .page-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+    .page-button {
+      min-width: 38px;
+      min-height: 38px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      color: var(--navy);
+      background: #fff;
+      font-weight: 900;
+    }
+    .page-button:hover:not(:disabled) { border-color: var(--teal); color: var(--teal-dark); }
+    .page-button:disabled { cursor: not-allowed; opacity: .42; }
+    .page-button.active { color: #fff; border-color: var(--teal); background: var(--teal); }
+    .footer-note { margin: 20px 4px 0; color: var(--muted); text-align: center; font-size: .8rem; }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      max-width: min(380px, calc(100vw - 36px));
+      padding: 12px 15px;
+      border-radius: 11px;
+      color: #fff;
+      background: var(--navy);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1000px) {
+      .field { grid-column: span 4; }
+      .field-wide { grid-column: span 8; }
+      .field-score { grid-column: span 2; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .hero { padding: 24px 16px 66px; }
+      .hero::after { right: -185px; bottom: -260px; }
+      h1 { font-size: clamp(1.85rem, 9vw, 2.45rem); line-height: 1.12; }
+      .hero-copy { margin-top: 10px; font-size: .93rem; }
+      .source-row { margin-top: 14px; }
+      main { margin-top: -40px; padding: 0 10px 34px; }
+      .filter-card { padding: 15px; }
+      .section-heading { margin-bottom: 14px; }
+      .section-heading p { display: none; }
+      .primary-search { margin-bottom: 10px; }
+      .location-filter-grid { grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; padding: 10px; }
+      .advanced-filters > summary { display: flex; }
+      .advanced-filters:not([open]) > .filter-grid { display: none !important; }
+      .advanced-filters[open] > .filter-grid { margin-top: 10px; }
+      .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field, .field-wide, .field-score { grid-column: span 2; }
+      .field-score { grid-column: span 1; }
+      label { margin-bottom: 5px; }
+      input, select { min-height: 48px; font-size: 16px; }
+      .filter-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; padding-top: 12px; }
+      .filter-actions .button-primary { grid-column: 1 / -1; min-height: 50px; }
+      .filter-actions .button-secondary { min-height: 46px; }
+      .filter-hint { width: 100%; margin-left: 0; }
+      .section-heading { gap: 12px; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+      .stat { min-height: 88px; padding: 12px; }
+      .stat-value { font-size: 1.55rem; }
+      .stat-note { display: none; }
+      .results-toolbar { align-items: flex-start; padding: 15px; }
+      .results-title { width: 100%; }
+      .results-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
+      .page-size-label { justify-content: space-between; grid-column: 1 / -1; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafa; }
+      .results-actions .button { min-height: 46px; padding-inline: 10px; }
+      .mobile-sort-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-column: 1 / -1; gap: 8px; }
+      .mobile-sort-label { margin: 0; }
+      .mobile-sort-label select { min-height: 46px; }
+      .mobile-sort-direction { min-width: 48px; min-height: 46px; padding: 8px; }
+      .table-wrap { overflow: visible; max-height: none; padding: 10px; background: #f5f7f7; }
+      table { display: none !important; }
+      .mobile-result-list:not([hidden]) { display: grid; gap: 10px; }
+      .loading-state, .empty-state, .error-state { padding: 42px 18px; }
+      .pagination { flex-direction: column; gap: 10px; padding: 12px; }
+      .page-summary { text-align: center; }
+      .page-controls { flex-wrap: nowrap; justify-content: center; width: 100%; overflow-x: auto; padding-bottom: 2px; }
+      .page-button { min-width: 42px; min-height: 42px; }
+      .footer-note { margin-top: 14px; padding-inline: 8px; }
+    }
+    @media (max-width: 430px) {
+      .source-row { align-items: flex-start; flex-direction: column; }
+      .live-pill { max-width: 100%; font-size: .78rem; }
+      .filter-count { font-size: .72rem; }
+      .button { font-size: .88rem; }
+    }
+    @media print {
+      .hero { padding-bottom: 25px; }
+      main { margin-top: 0; padding: 15px; }
+      .filter-card, .stats, .results-actions, .pagination, .footer-note, .mobile-result-list { display: none !important; }
+      .results-card { box-shadow: none; border: 0; }
+      .table-wrap { overflow: visible; max-height: none; }
+      table { min-width: 100%; font-size: 8pt; }
+      thead { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#results">ข้ามไปยังผลลัพธ์</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">STATIC DATA EXPLORER</div>
+      <h1>ค้นหารายชื่อและคะแนน<br>จากข้อมูลล่าสุด</h1>
+      <p class="hero-copy">ค้นหาชื่อ ID หรือหน่วยงาน กรองตามจังหวัดและอำเภอ กรองช่วงคะแนน และเรียงผลลัพธ์ได้จากหน้าเดียว โดยใช้ฐานข้อมูลคงที่ 3,966 รายชื่อ</p>
+      <div class="source-row">
+        <div class="live-pill"><span class="live-dot" aria-hidden="true"></span><span id="source-status">กำลังโหลดฐานข้อมูล...</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card filter-card" aria-labelledby="filter-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="filter-title">ตัวกรองข้อมูล</h2>
+          <p>ใช้หลายตัวกรองพร้อมกันได้ และกด Enter เพื่อแสดงผลทันที</p>
+        </div>
+        <span class="filter-count" id="active-filter-count">ยังไม่ได้ใช้ตัวกรอง</span>
+      </div>
+
+      <div class="primary-search">
+        <label for="search">ค้นหาชื่อ, ID หรือหน่วยงาน</label>
+        <input id="search" type="search" autocomplete="off" enterkeyhint="search" placeholder="พิมพ์ชื่อ, ID หรือชื่อหน่วยงาน">
+      </div>
+
+      <div class="location-filter-grid" aria-label="ตัวกรองพื้นที่หลัก">
+        <div class="field">
+          <label for="province">จังหวัด</label>
+          <select id="province"><option value="">ทุกจังหวัด</option></select>
+        </div>
+        <div class="field">
+          <label for="district">อำเภอ / เขต</label>
+          <select id="district"><option value="">ทุกอำเภอ / เขต</option></select>
+        </div>
+      </div>
+
+      <details class="advanced-filters" id="advanced-filters">
+        <summary>ตัวกรองเพิ่มเติม</summary>
+        <div class="filter-grid">
+          <div class="field">
+            <label for="org-type">ประเภทหน่วยงาน</label>
+            <select id="org-type"><option value="">ทุกประเภท</option></select>
+          </div>
+          <div class="field">
+            <label for="status">สถานะ</label>
+            <select id="status"><option value="">ทุกสถานะ</option></select>
+          </div>
+          <div class="field field-score">
+            <label for="score-min">คะแนนต่ำสุด</label>
+            <input id="score-min" type="number" inputmode="numeric" placeholder="ต่ำสุด">
+          </div>
+          <div class="field field-score">
+            <label for="score-max">คะแนนสูงสุด</label>
+            <input id="score-max" type="number" inputmode="numeric" placeholder="สูงสุด">
+          </div>
+        </div>
+      </details>
+
+      <div class="filter-actions">
+        <button class="button button-primary" id="apply-filter" type="button">แสดงผลตามตัวกรอง</button>
+        <button class="button button-secondary" id="reset-filter" type="button">ล้างตัวกรองทั้งหมด</button>
+        <span class="filter-hint" id="updated-at">ข้อมูลจะอัปเดตเมื่อเปิดหน้าหรือกดโหลดใหม่</span>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="สรุปผลลัพธ์" aria-live="polite">
+      <article class="stat">
+        <div class="stat-label">พบรายการ</div>
+        <div class="stat-value" id="stat-records">—</div>
+        <div class="stat-note" id="stat-records-note">กำลังโหลดข้อมูล</div>
+      </article>
+      <article class="stat">
+        <div class="stat-label">หน่วยงานในผลลัพธ์</div>
+        <div class="stat-value" id="stat-organizations">—</div>
+        <div class="stat-note">นับชื่อหน่วยงานไม่ซ้ำ</div>
+      </article>
+      <article class="stat">
+        <div class="stat-label">คะแนนเฉลี่ย</div>
+        <div class="stat-value" id="stat-average">—</div>
+        <div class="stat-note">คำนวณจากผลลัพธ์ปัจจุบัน</div>
+      </article>
+      <article class="stat">
+        <div class="stat-label">ช่วงคะแนน</div>
+        <div class="stat-value" id="stat-range">—</div>
+        <div class="stat-note">ต่ำสุด–สูงสุดในผลลัพธ์</div>
+      </article>
+    </section>
+
+    <section class="card results-card" id="results" aria-labelledby="results-title">
+      <div class="results-toolbar">
+        <div class="results-title">
+          <h2 id="results-title">ผลลัพธ์</h2>
+          <p id="results-description">กำลังโหลดข้อมูลล่าสุด...</p>
+        </div>
+        <div class="results-actions">
+          <label class="page-size-label" for="page-size">แสดงต่อหน้า
+            <select id="page-size">
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
+          <div class="mobile-sort-controls">
+            <label class="mobile-sort-label" for="mobile-sort">เรียงผลลัพธ์
+              <select id="mobile-sort">
+                <option value="seq">ลำดับ</option>
+                <option value="name">ชื่อ-สกุล</option>
+                <option value="id">ID</option>
+                <option value="score">คะแนน</option>
+                <option value="org">หน่วยงาน</option>
+                <option value="status">สถานะ</option>
+                <option value="district">อำเภอ / เขต</option>
+                <option value="province">จังหวัด</option>
+              </select>
+            </label>
+            <button class="button button-secondary mobile-sort-direction" id="mobile-sort-direction" type="button" aria-label="สลับทิศทางการเรียง">↑</button>
+          </div>
+          <button class="button button-secondary" id="reload-data" type="button">โหลดข้อมูลใหม่</button>
+          <button class="button button-secondary" id="export-csv" type="button">ส่งออกผลลัพธ์ CSV</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="table-wrap" tabindex="0" aria-label="รายการผลลัพธ์">
+        <div class="loading-state" id="loading-state"><strong>กำลังโหลดรายชื่อ</strong><span>อ่านฐานข้อมูลคงที่พร้อมข้อมูลจังหวัดและอำเภอ</span></div>
+        <div class="mobile-result-list" id="mobile-result-list" role="list" hidden></div>
+        <table id="results-table" hidden>
+          <thead>
+            <tr>
+              <th data-key="seq"><button class="sort-button" type="button">ลำดับ <span class="sort-mark">↕</span></button></th>
+              <th data-key="name"><button class="sort-button" type="button">ชื่อ-สกุล <span class="sort-mark">↕</span></button></th>
+              <th data-key="id"><button class="sort-button" type="button">ID <span class="sort-mark">↕</span></button></th>
+              <th data-key="score"><button class="sort-button" type="button">คะแนน <span class="sort-mark">↕</span></button></th>
+              <th data-key="org"><button class="sort-button" type="button">หน่วยงาน <span class="sort-mark">↕</span></button></th>
+              <th data-key="status"><button class="sort-button" type="button">สถานะ <span class="sort-mark">↕</span></button></th>
+              <th data-key="district"><button class="sort-button" type="button">อำเภอ / เขต <span class="sort-mark">↕</span></button></th>
+              <th data-key="province"><button class="sort-button" type="button">จังหวัด <span class="sort-mark">↕</span></button></th>
+            </tr>
+          </thead>
+          <tbody id="result-body"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state"><strong>ไม่พบรายการที่ตรงกับตัวกรอง</strong><span>ลองล้างบางตัวกรองหรือใช้คำค้นที่สั้นลง</span></div>
+        <div class="error-state" id="error-state"><strong>ยังโหลดข้อมูลไม่สำเร็จ</strong><span id="error-message">โปรดลองอีกครั้ง</span><br><button class="button button-secondary" id="retry-data" type="button">ลองโหลดอีกครั้ง</button></div>
+      </div>
+
+      <div class="pagination">
+        <div class="page-summary" id="page-summary">—</div>
+        <nav class="page-controls" id="page-controls" aria-label="เปลี่ยนหน้าผลลัพธ์"></nav>
+      </div>
+    </section>
+
+    <p class="footer-note">เลือกจังหวัดก่อน รายชื่ออำเภอ / เขตจะปรับตามโดยอัตโนมัติ ระบบใช้ฐานข้อมูลคงที่ 3,966 รายชื่อและไม่เชื่อมต่อ Google Sheet</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const DATA_ENDPOINT = "/data/score-corrections.csv";
+      const LOCATION_DATA_ENDPOINT = "/data/location-index.json";
+      const sourceColumns = ["ลำดับ", "ชื่อ-สกุล", "ID", "แก้ไขคะแนน", "หน่วยงาน", "สถานะ", "จังหวัด"];
+      const columns = ["ลำดับ", "ชื่อ-สกุล", "ID", "แก้ไขคะแนน", "หน่วยงาน", "สถานะ", "อำเภอ", "จังหวัด"];
+      const collator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
+      const numberFormat = new Intl.NumberFormat("th-TH");
+      const decimalFormat = new Intl.NumberFormat("th-TH", { maximumFractionDigits: 1 });
+
+      const refs = {
+        search: document.getElementById("search"),
+        orgType: document.getElementById("org-type"),
+        status: document.getElementById("status"),
+        province: document.getElementById("province"),
+        district: document.getElementById("district"),
+        scoreMin: document.getElementById("score-min"),
+        scoreMax: document.getElementById("score-max"),
+        apply: document.getElementById("apply-filter"),
+        reset: document.getElementById("reset-filter"),
+        activeCount: document.getElementById("active-filter-count"),
+        advancedFilters: document.getElementById("advanced-filters"),
+        pageSize: document.getElementById("page-size"),
+        mobileSort: document.getElementById("mobile-sort"),
+        mobileSortDirection: document.getElementById("mobile-sort-direction"),
+        reload: document.getElementById("reload-data"),
+        retry: document.getElementById("retry-data"),
+        exportCsv: document.getElementById("export-csv"),
+        table: document.getElementById("results-table"),
+        tbody: document.getElementById("result-body"),
+        mobileList: document.getElementById("mobile-result-list"),
+        loading: document.getElementById("loading-state"),
+        empty: document.getElementById("empty-state"),
+        error: document.getElementById("error-state"),
+        errorMessage: document.getElementById("error-message"),
+        resultDescription: document.getElementById("results-description"),
+        pageSummary: document.getElementById("page-summary"),
+        pageControls: document.getElementById("page-controls"),
+        statRecords: document.getElementById("stat-records"),
+        statRecordsNote: document.getElementById("stat-records-note"),
+        statOrganizations: document.getElementById("stat-organizations"),
+        statAverage: document.getElementById("stat-average"),
+        statRange: document.getElementById("stat-range"),
+        sourceStatus: document.getElementById("source-status"),
+        updatedAt: document.getElementById("updated-at"),
+        toast: document.getElementById("toast")
+      };
+
+      const state = {
+        records: [],
+        enriched: [],
+        filtered: [],
+        page: 1,
+        pageSize: Number(refs.pageSize.value),
+        sortKey: "seq",
+        sortDirection: "asc",
+        loading: true
+      };
+
+      const normalize = value => String(value ?? "").trim().toLocaleLowerCase("th");
+      const normalizeIdentityPart = value => String(value ?? "")
+        .normalize("NFC")
+        .replaceAll("ํา", "ำ")
+        .replace(/\s+/g, "");
+      const normalizeOrganization = value => {
+        let normalized = normalizeIdentityPart(value);
+        const replacements = [
+          ["องค์การบริหารส่วนจังหวัด", "อบจ."],
+          ["องค์การบริหารส่วนตำบล", "อบต."],
+          ["เทศบาลนคร", "ทน."],
+          ["เทศบาลเมือง", "ทม."],
+          ["เทศบาลตำบล", "ทต."]
+        ];
+        for (const [full, short] of replacements) {
+          if (normalized.startsWith(full)) {
+            normalized = short + normalized.slice(full.length);
+            break;
+          }
+        }
+        return normalized.replaceAll("ฯ", "");
+      };
+      const getIdentityKey = record => [
+        normalizeIdentityPart(record["ชื่อ-สกุล"]),
+        normalizeIdentityPart(record.ID),
+        normalizeOrganization(record["หน่วยงาน"])
+      ].join("\u001f");
+      const parseScore = value => {
+        const parsed = Number.parseInt(String(value ?? "").replace(/[^0-9-]/g, ""), 10);
+        return Number.isFinite(parsed) ? parsed : 0;
+      };
+
+      const parseCsv = text => {
+        const rows = [];
+        let row = [];
+        let field = "";
+        let quoted = false;
+
+        for (let index = 0; index < text.length; index += 1) {
+          const char = text[index];
+          if (quoted) {
+            if (char === '"' && text[index + 1] === '"') {
+              field += '"';
+              index += 1;
+            } else if (char === '"') {
+              quoted = false;
+            } else {
+              field += char;
+            }
+          } else if (char === '"') {
+            quoted = true;
+          } else if (char === ",") {
+            row.push(field);
+            field = "";
+          } else if (char === "\n") {
+            row.push(field.replace(/\r$/, ""));
+            rows.push(row);
+            row = [];
+            field = "";
+          } else {
+            field += char;
+          }
+        }
+
+        if (field || row.length) {
+          row.push(field.replace(/\r$/, ""));
+          rows.push(row);
+        }
+
+        const headers = (rows.shift() || []).map((header, index) => index === 0 ? header.replace(/^\uFEFF/, "") : header);
+        return rows
+          .filter(values => values.some(value => value.trim() !== ""))
+          .map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
+      };
+
+      const fetchRecords = async endpoint => {
+        const separator = endpoint.includes("?") ? "&" : "?";
+        const response = await fetch(`${endpoint}${separator}t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const records = parseCsv(await response.text());
+        const missing = sourceColumns.filter(column => !Object.prototype.hasOwnProperty.call(records[0] || {}, column));
+        if (!records.length || missing.length) {
+          throw new Error("รูปแบบคอลัมน์ไม่ตรงกับที่ระบบต้องใช้");
+        }
+        return records;
+      };
+
+      const fetchLocationIndex = async () => {
+        const response = await fetch(`${LOCATION_DATA_ENDPOINT}?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        return payload && typeof payload.records === "object" ? payload.records : {};
+      };
+
+      const parseLocationChoices = record => {
+        const choices = String(record["ตัวเลือกพื้นที่"] || "").trim();
+        if (choices) {
+          return choices.split(" | ").map(choice => {
+            const separator = choice.lastIndexOf(",");
+            if (separator < 0) return null;
+            const district = choice.slice(0, separator).trim();
+            const province = choice.slice(separator + 1).trim();
+            return district && province ? { district, province } : null;
+          }).filter(Boolean);
+        }
+
+        const districts = String(record["อำเภอ"] || "").split(" | ").map(value => value.trim()).filter(Boolean);
+        const provinces = String(record["จังหวัด"] || "").split(" | ").map(value => value.trim()).filter(Boolean);
+        if (districts.length === provinces.length) {
+          return districts.map((district, index) => ({ district, province: provinces[index] }));
+        }
+        return provinces.map(province => ({ district: "", province }));
+      };
+
+      const applyLocationData = (records, locationIndex) => records.map(record => {
+        const indexed = locationIndex[getIdentityKey(record)] || [];
+        const locations = indexed.length
+          ? indexed.map(([district, province]) => ({ district, province }))
+          : parseLocationChoices(record);
+        record._locations = locations;
+        if (locations.length) {
+          record["อำเภอ"] = uniqueSorted(locations.map(location => location.district)).join(" | ");
+          record["จังหวัด"] = uniqueSorted(locations.map(location => location.province)).join(" | ");
+          record["ตัวเลือกพื้นที่"] = locations
+            .map(location => `${location.district}, ${location.province}`)
+            .join(" | ");
+        }
+        return record;
+      });
+
+      const getOrgType = organization => {
+        const value = String(organization ?? "").trim();
+        if (/^อบต\./.test(value)) return "องค์การบริหารส่วนตำบล (อบต.)";
+        if (/^อบจ\./.test(value)) return "องค์การบริหารส่วนจังหวัด (อบจ.)";
+        if (/^เทศบาลนคร/.test(value)) return "เทศบาลนคร";
+        if (/^เทศบาลเมือง/.test(value)) return "เทศบาลเมือง";
+        if (/^เทศบาลต[ำํา]บล/.test(value)) return "เทศบาลตำบล";
+        if (/กรุงเทพมหานคร|เมืองพัทยา/.test(value)) return "องค์กรปกครองรูปแบบพิเศษ";
+        return "อื่น ๆ";
+      };
+
+      const uniqueSorted = values => [...new Set(values.filter(Boolean))].sort(collator.compare);
+      const fillSelect = (select, values, firstLabel) => {
+        const previous = select.value;
+        const fragment = document.createDocumentFragment();
+        const first = document.createElement("option");
+        first.value = "";
+        first.textContent = firstLabel;
+        fragment.appendChild(first);
+        values.forEach(value => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          fragment.appendChild(option);
+        });
+        select.replaceChildren(fragment);
+        if (values.includes(previous)) select.value = previous;
+      };
+
+      const enrichRecords = records => records.map((record, index) => {
+        const locations = Array.isArray(record._locations) ? record._locations : parseLocationChoices(record);
+        return {
+          record,
+          index,
+          locations,
+          score: parseScore(record["แก้ไขคะแนน"]),
+          orgType: getOrgType(record["หน่วยงาน"]),
+          searchText: normalize([
+            record["ชื่อ-สกุล"], record.ID, record["หน่วยงาน"], record["สถานะ"],
+            record["อำเภอ"], record["จังหวัด"]
+          ].join(" "))
+        };
+      });
+
+      const configureDistrictFilter = () => {
+        const selectedProvince = refs.province.value;
+        const districts = uniqueSorted(state.enriched.flatMap(item => item.locations
+          .filter(location => !selectedProvince || location.province === selectedProvince)
+          .map(location => location.district)));
+        fillSelect(refs.district, districts, "ทุกอำเภอ / เขต");
+      };
+
+      const configureFilters = () => {
+        fillSelect(refs.orgType, uniqueSorted(state.enriched.map(item => item.orgType)), "ทุกประเภท");
+        fillSelect(refs.status, uniqueSorted(state.records.map(record => record["สถานะ"])), "ทุกสถานะ");
+        const provinces = uniqueSorted(state.enriched.flatMap(item => item.locations.map(location => location.province)));
+        fillSelect(refs.province, provinces, "ทุกจังหวัด");
+        configureDistrictFilter();
+
+        const scores = state.enriched.map(item => item.score);
+        refs.scoreMin.placeholder = scores.length ? String(Math.min(...scores)) : "ต่ำสุด";
+        refs.scoreMax.placeholder = scores.length ? String(Math.max(...scores)) : "สูงสุด";
+      };
+
+      const readFilters = () => ({
+        search: normalize(refs.search.value),
+        orgType: refs.orgType.value,
+        status: refs.status.value,
+        province: refs.province.value,
+        district: refs.district.value,
+        scoreMin: refs.scoreMin.value === "" ? null : Number(refs.scoreMin.value),
+        scoreMax: refs.scoreMax.value === "" ? null : Number(refs.scoreMax.value)
+      });
+
+      const activeFilterCount = filters => Object.values(filters).filter(value => value !== "" && value !== null).length;
+
+      const applyFilters = ({ preservePage = false } = {}) => {
+        if (state.loading) return;
+        const filters = readFilters();
+        state.filtered = state.enriched.filter(item => {
+          const record = item.record;
+          const locationMatches = (!filters.province && !filters.district) || item.locations.some(location =>
+            (!filters.province || location.province === filters.province) &&
+            (!filters.district || location.district === filters.district));
+          return (!filters.search || item.searchText.includes(filters.search)) &&
+            (!filters.orgType || item.orgType === filters.orgType) &&
+            (!filters.status || record["สถานะ"] === filters.status) &&
+            locationMatches &&
+            (filters.scoreMin === null || item.score >= filters.scoreMin) &&
+            (filters.scoreMax === null || item.score <= filters.scoreMax);
+        });
+        if (!preservePage) state.page = 1;
+        sortResults();
+        const count = activeFilterCount(filters);
+        refs.activeCount.textContent = count ? `ใช้งาน ${numberFormat.format(count)} ตัวกรอง` : "ยังไม่ได้ใช้ตัวกรอง";
+        render();
+      };
+
+      const getSortValue = (item, key) => ({
+        seq: Number(item.record["ลำดับ"]) || 0,
+        name: item.record["ชื่อ-สกุล"],
+        id: item.record.ID,
+        score: item.score,
+        org: item.record["หน่วยงาน"],
+        status: item.record["สถานะ"],
+        district: item.record["อำเภอ"],
+        province: item.record["จังหวัด"]
+      }[key] ?? "");
+
+      const sortResults = () => {
+        const direction = state.sortDirection === "asc" ? 1 : -1;
+        state.filtered.sort((left, right) => {
+          const a = getSortValue(left, state.sortKey);
+          const b = getSortValue(right, state.sortKey);
+          const comparison = typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b));
+          return comparison === 0 ? left.index - right.index : comparison * direction;
+        });
+      };
+
+      const createCell = (className, value) => {
+        const cell = document.createElement("td");
+        if (className) cell.className = className;
+        cell.textContent = value || "—";
+        return cell;
+      };
+
+      const appendMobileDetail = (container, label, value) => {
+        const row = document.createElement("div");
+        row.className = "result-detail";
+
+        const labelNode = document.createElement("span");
+        labelNode.className = "result-detail-label";
+        labelNode.textContent = label;
+
+        const valueNode = document.createElement("span");
+        valueNode.className = "result-detail-value";
+        valueNode.textContent = value || "—";
+
+        row.append(labelNode, valueNode);
+        container.appendChild(row);
+      };
+
+      const createMobileCard = item => {
+        const record = item.record;
+        const card = document.createElement("article");
+        card.className = "result-card";
+        card.setAttribute("role", "listitem");
+
+        const head = document.createElement("div");
+        head.className = "result-card-head";
+
+        const identity = document.createElement("div");
+        const kicker = document.createElement("span");
+        kicker.className = "result-card-kicker";
+        kicker.textContent = `รายการที่ ${record["ลำดับ"] || "—"}`;
+        const name = document.createElement("h3");
+        name.className = "result-card-name";
+        name.textContent = record["ชื่อ-สกุล"] || "ไม่ระบุชื่อ";
+        const id = document.createElement("div");
+        id.className = "result-card-id";
+        id.textContent = `ID ${record.ID || "—"}`;
+        identity.append(kicker, name, id);
+
+        const score = document.createElement("div");
+        score.className = "result-card-score";
+        score.textContent = record["แก้ไขคะแนน"] || "0";
+        const scoreLabel = document.createElement("small");
+        scoreLabel.textContent = "คะแนน";
+        score.appendChild(scoreLabel);
+        head.append(identity, score);
+
+        const details = document.createElement("div");
+        details.className = "result-card-details";
+        appendMobileDetail(details, "หน่วยงาน", record["หน่วยงาน"]);
+        appendMobileDetail(details, "สถานะ", record["สถานะ"]);
+        if (record["อำเภอ"]) appendMobileDetail(details, "อำเภอ / เขต", record["อำเภอ"]);
+        if (record["จังหวัด"]) appendMobileDetail(details, "จังหวัด", record["จังหวัด"]);
+
+        card.append(head, details);
+        return card;
+      };
+
+      const renderRows = () => {
+        const start = (state.page - 1) * state.pageSize;
+        const pageItems = state.filtered.slice(start, start + state.pageSize);
+        const fragment = document.createDocumentFragment();
+        const mobileFragment = document.createDocumentFragment();
+
+        pageItems.forEach(item => {
+          const record = item.record;
+          const row = document.createElement("tr");
+          row.appendChild(createCell("seq", record["ลำดับ"]));
+          row.appendChild(createCell("person", record["ชื่อ-สกุล"]));
+          row.appendChild(createCell("masked-id", record.ID));
+
+          const scoreCell = document.createElement("td");
+          const score = document.createElement("span");
+          score.className = "score";
+          score.textContent = record["แก้ไขคะแนน"] || "0";
+          scoreCell.appendChild(score);
+          row.appendChild(scoreCell);
+
+          row.appendChild(createCell("org", record["หน่วยงาน"]));
+          row.appendChild(createCell("status-cell", record["สถานะ"]));
+          row.appendChild(createCell("district-cell", record["อำเภอ"]));
+          row.appendChild(createCell("province-cell", record["จังหวัด"]));
+          fragment.appendChild(row);
+          mobileFragment.appendChild(createMobileCard(item));
+        });
+
+        refs.tbody.replaceChildren(fragment);
+        refs.mobileList.replaceChildren(mobileFragment);
+        refs.mobileList.hidden = pageItems.length === 0;
+        refs.table.hidden = pageItems.length === 0;
+        refs.empty.style.display = pageItems.length ? "none" : "block";
+      };
+
+      const visiblePageNumbers = (current, total) => {
+        if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+        const pages = [1];
+        const start = Math.max(2, current - 1);
+        const end = Math.min(total - 1, current + 1);
+        if (start > 2) pages.push("ellipsis-left");
+        for (let page = start; page <= end; page += 1) pages.push(page);
+        if (end < total - 1) pages.push("ellipsis-right");
+        pages.push(total);
+        return pages;
+      };
+
+      const makePageButton = (label, page, options = {}) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `page-button${options.active ? " active" : ""}`;
+        button.textContent = label;
+        button.disabled = Boolean(options.disabled);
+        if (options.label) button.setAttribute("aria-label", options.label);
+        if (options.active) button.setAttribute("aria-current", "page");
+        button.addEventListener("click", () => {
+          state.page = page;
+          render();
+          document.getElementById("results").scrollIntoView({ block: "start" });
+        });
+        return button;
+      };
+
+      const renderPagination = () => {
+        const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+        state.page = Math.min(state.page, totalPages);
+        const start = state.filtered.length ? (state.page - 1) * state.pageSize + 1 : 0;
+        const end = Math.min(state.page * state.pageSize, state.filtered.length);
+        refs.pageSummary.textContent = state.filtered.length
+          ? `แสดง ${numberFormat.format(start)}–${numberFormat.format(end)} จาก ${numberFormat.format(state.filtered.length)} รายการ`
+          : "ไม่มีผลลัพธ์";
+
+        const fragment = document.createDocumentFragment();
+        fragment.appendChild(makePageButton("«", 1, { disabled: state.page === 1, label: "หน้าแรก" }));
+        fragment.appendChild(makePageButton("‹", Math.max(1, state.page - 1), { disabled: state.page === 1, label: "หน้าก่อนหน้า" }));
+        visiblePageNumbers(state.page, totalPages).forEach(page => {
+          if (typeof page === "string") {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "page-button";
+            ellipsis.textContent = "…";
+            ellipsis.setAttribute("aria-hidden", "true");
+            fragment.appendChild(ellipsis);
+          } else {
+            fragment.appendChild(makePageButton(numberFormat.format(page), page, { active: page === state.page, label: `หน้าที่ ${page}` }));
+          }
+        });
+        fragment.appendChild(makePageButton("›", Math.min(totalPages, state.page + 1), { disabled: state.page === totalPages, label: "หน้าถัดไป" }));
+        fragment.appendChild(makePageButton("»", totalPages, { disabled: state.page === totalPages, label: "หน้าสุดท้าย" }));
+        refs.pageControls.replaceChildren(fragment);
+      };
+
+      const sortLabel = key => ({ seq: "ลำดับ", name: "ชื่อ", id: "ID", score: "คะแนน", org: "หน่วยงาน", status: "สถานะ", district: "อำเภอ / เขต", province: "จังหวัด" }[key] || key);
+
+      const renderStats = () => {
+        const scores = state.filtered.map(item => item.score);
+        const organizations = new Set(state.filtered.map(item => item.record["หน่วยงาน"]).filter(Boolean));
+        const average = scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+        refs.statRecords.textContent = numberFormat.format(state.filtered.length);
+        refs.statRecordsNote.textContent = `จากทั้งหมด ${numberFormat.format(state.records.length)} รายการ`;
+        refs.statOrganizations.textContent = numberFormat.format(organizations.size);
+        refs.statAverage.textContent = scores.length ? decimalFormat.format(average) : "—";
+        refs.statRange.textContent = scores.length ? `${numberFormat.format(Math.min(...scores))}–${numberFormat.format(Math.max(...scores))}` : "—";
+        refs.resultDescription.textContent = `พบ ${numberFormat.format(state.filtered.length)} รายการ • เรียงตาม${sortLabel(state.sortKey)} ${state.sortDirection === "asc" ? "น้อยไปมาก" : "มากไปน้อย"}`;
+      };
+
+      const renderSortHeaders = () => {
+        document.querySelectorAll("th[data-key]").forEach(header => {
+          const key = header.dataset.key;
+          const mark = header.querySelector(".sort-mark");
+          const active = key === state.sortKey;
+          header.setAttribute("aria-sort", active ? (state.sortDirection === "asc" ? "ascending" : "descending") : "none");
+          mark.textContent = active ? (state.sortDirection === "asc" ? "↑" : "↓") : "↕";
+        });
+        refs.mobileSort.value = state.sortKey;
+        refs.mobileSortDirection.textContent = state.sortDirection === "asc" ? "↑" : "↓";
+        refs.mobileSortDirection.setAttribute(
+          "aria-label",
+          state.sortDirection === "asc" ? "เรียงจากน้อยไปมาก กดเพื่อสลับ" : "เรียงจากมากไปน้อย กดเพื่อสลับ",
+        );
+      };
+
+      const render = () => {
+        renderPagination();
+        renderRows();
+        renderStats();
+        renderSortHeaders();
+      };
+
+      const setLoadingState = loading => {
+        state.loading = loading;
+        refs.loading.style.display = loading ? "block" : "none";
+        refs.reload.disabled = loading;
+        refs.retry.disabled = loading;
+        refs.exportCsv.disabled = loading;
+        refs.mobileSort.disabled = loading;
+        refs.mobileSortDirection.disabled = loading;
+        if (loading) {
+          refs.table.hidden = true;
+          refs.mobileList.hidden = true;
+          refs.empty.style.display = "none";
+          refs.error.style.display = "none";
+          refs.sourceStatus.textContent = "กำลังโหลดฐานข้อมูล...";
+        }
+      };
+
+      const loadData = async ({ notify = false } = {}) => {
+        setLoadingState(true);
+        try {
+          const locationIndex = await fetchLocationIndex().catch(() => ({}));
+          const records = await fetchRecords(DATA_ENDPOINT);
+
+          state.records = applyLocationData(records, locationIndex);
+          state.enriched = enrichRecords(state.records);
+          state.page = 1;
+          configureFilters();
+          setLoadingState(false);
+          const loadedAt = new Date();
+          refs.sourceStatus.textContent = `ฐานข้อมูลคงที่ • ${numberFormat.format(state.records.length)} รายชื่อ`;
+          refs.updatedAt.textContent = `โหลดล่าสุด ${loadedAt.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.`;
+          applyFilters();
+          if (notify) {
+            showToast(`โหลดฐานข้อมูล ${numberFormat.format(state.records.length)} รายการแล้ว`);
+          }
+        } catch (error) {
+          setLoadingState(false);
+          refs.error.style.display = "block";
+          refs.table.hidden = true;
+          refs.mobileList.hidden = true;
+          refs.empty.style.display = "none";
+          refs.pageSummary.textContent = "โหลดข้อมูลไม่สำเร็จ";
+          refs.pageControls.replaceChildren();
+          refs.resultDescription.textContent = "ไม่สามารถโหลดฐานข้อมูลได้ในขณะนี้";
+          refs.sourceStatus.textContent = "โหลดฐานข้อมูลไม่สำเร็จ";
+          refs.errorMessage.textContent = error instanceof Error ? error.message : "โปรดลองอีกครั้ง";
+        }
+      };
+
+      const csvEscape = value => {
+        const text = String(value ?? "");
+        return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      };
+
+      const exportFilteredCsv = () => {
+        if (!state.filtered.length) {
+          showToast("ไม่มีข้อมูลสำหรับส่งออก");
+          return;
+        }
+        const csv = [
+          columns.map(csvEscape).join(","),
+          ...state.filtered.map(item => columns.map(column => csvEscape(item.record[column])).join(","))
+        ].join("\r\n");
+        const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+        link.href = url;
+        link.download = `scores_filtered_${date}_${state.filtered.length}_rows.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast(`ส่งออก ${numberFormat.format(state.filtered.length)} รายการแล้ว`);
+      };
+
+      let toastTimer;
+      const showToast = message => {
+        refs.toast.textContent = message;
+        refs.toast.classList.add("show");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => refs.toast.classList.remove("show"), 2600);
+      };
+
+      const resetFilters = () => {
+        [refs.search, refs.scoreMin, refs.scoreMax].forEach(input => { input.value = ""; });
+        [refs.orgType, refs.status, refs.province, refs.district].forEach(select => { select.value = ""; });
+        configureDistrictFilter();
+        state.sortKey = "seq";
+        state.sortDirection = "asc";
+        if (window.matchMedia("(max-width: 700px)").matches) refs.advancedFilters.open = false;
+        applyFilters();
+        showToast("ล้างตัวกรองทั้งหมดแล้ว");
+      };
+
+      [refs.orgType, refs.status, refs.district].forEach(select => select.addEventListener("change", () => applyFilters()));
+      refs.province.addEventListener("change", () => {
+        configureDistrictFilter();
+        applyFilters();
+      });
+      refs.apply.addEventListener("click", () => applyFilters());
+      refs.reset.addEventListener("click", resetFilters);
+      refs.reload.addEventListener("click", () => loadData({ notify: true }));
+      refs.retry.addEventListener("click", () => loadData({ notify: true }));
+      refs.pageSize.addEventListener("change", () => {
+        state.pageSize = Number(refs.pageSize.value);
+        state.page = 1;
+        render();
+      });
+      refs.exportCsv.addEventListener("click", exportFilteredCsv);
+      refs.mobileSort.addEventListener("change", () => {
+        state.sortKey = refs.mobileSort.value;
+        state.sortDirection = "asc";
+        state.page = 1;
+        sortResults();
+        render();
+      });
+      refs.mobileSortDirection.addEventListener("click", () => {
+        state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
+        state.page = 1;
+        sortResults();
+        render();
+      });
+      let searchTimer;
+      refs.search.addEventListener("input", () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => applyFilters(), 240);
+      });
+      [refs.scoreMin, refs.scoreMax].forEach(input => input.addEventListener("change", () => applyFilters()));
+      [refs.search, refs.scoreMin, refs.scoreMax].forEach(input => {
+        input.addEventListener("keydown", event => { if (event.key === "Enter") applyFilters(); });
+      });
+      document.querySelectorAll("th[data-key] .sort-button").forEach(button => {
+        button.addEventListener("click", () => {
+          const key = button.closest("th").dataset.key;
+          if (state.sortKey === key) state.sortDirection = state.sortDirection === "asc" ? "desc" : "asc";
+          else { state.sortKey = key; state.sortDirection = "asc"; }
+          state.page = 1;
+          sortResults();
+          render();
+        });
+      });
+
+      loadData();
+    })();
+  </script>
+</body>
+</html>
